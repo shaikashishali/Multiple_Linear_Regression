@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RegressIQ | Multiple Linear Regression</title>
+<style>
+:root{--orange:#ff7a18;--red:#e53935;--ink:#2b1714;--muted:#806b64;--line:#f0ddd2}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;color:var(--ink);background:linear-gradient(135deg,#fff4e9,#fff 48%,#fff0ec)}
+.hero{padding:42px 7vw 55px;color:#fff;background:linear-gradient(120deg,#ff9800,#ff5722 52%,#d92332)}
+.brand{font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:12px}h1{font-size:clamp(34px,5vw,54px);line-height:1.05;margin:18px 0 10px;letter-spacing:-1px}.hero p{max-width:700px;line-height:1.7}.formula{display:inline-block;padding:10px 14px;border:1px solid #ffffff77;border-radius:12px;background:#ffffff22;font-weight:700}
+.wrap{width:min(1120px,92vw);margin:-24px auto 45px}.layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.card{background:#ffffffed;border:1px solid var(--line);border-radius:20px;padding:23px;margin-bottom:20px;box-shadow:0 14px 40px #67280f12}
+h2{font-size:21px;margin:0 0 8px}.sub,.muted{color:var(--muted);font-size:13px;line-height:1.6}.pill{display:inline-block;background:#fff0e5;color:#b63b1f;border-radius:99px;padding:6px 9px;font-size:11px;font-weight:800;margin-bottom:10px}
+label{display:block;font-weight:700;font-size:13px;margin:13px 0 8px}input[type=file],input[type=number],input[type=text],select{width:100%;padding:12px;border:1px solid #e8d6cb;border-radius:11px;background:#fffdfb;font:inherit}
+.btn{margin-top:15px;padding:12px 17px;border:0;border-radius:11px;background:linear-gradient(100deg,var(--orange),var(--red));color:#fff;font-weight:800;cursor:pointer}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{display:flex;gap:8px;align-items:center;background:#fffaf6;border:1px solid var(--line);padding:10px;border-radius:10px;overflow-wrap:anywhere}.check input{accent-color:var(--red)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:15px 0}.metric{padding:13px;border:1px solid #ffe0cc;border-radius:13px;background:linear-gradient(140deg,#fff3e6,#fff0ed)}.metric span{display:block;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase}.metric strong{display:block;font-size:18px;margin-top:8px;overflow-wrap:anywhere}
+.notice{background:#fff0ed;color:#a62822;border:1px solid #ffd0c8;border-radius:12px;padding:13px;margin-bottom:18px}.result{font-size:30px;font-weight:900;color:#d9342b}.table-wrap{overflow:auto;max-height:320px;border:1px solid var(--line);border-radius:12px;margin-top:12px}.data-table{border-collapse:collapse;width:100%;font-size:12px;background:white}.data-table th{background:#fff0e5;color:#8b321e;text-align:left}.data-table th,.data-table td{padding:9px 11px;border-bottom:1px solid #f4e7df;white-space:nowrap}
+footer{text-align:center;color:#9b7e72;font-size:12px;padding-bottom:28px}@media(max-width:780px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}.checks{grid-template-columns:1fr}.hero{padding:32px 5vw 48px}.card{padding:18px}}
+</style></head><body>
+<header class="hero"><div class="brand">✦ RegressIQ · ML Studio</div><h1>Make data tell<br>its next story.</h1>
+<p>Train a Multiple Linear Regression model, review performance, and predict a numeric outcome from several features in one dashboard.</p><div class="formula">y = b₀ + b₁x₁ + b₂x₂ + … + bₙxₙ</div></header>
+<main class="wrap">
+{% if error %}<div class="notice">⚠ {{error}}</div>{% endif %}
+{% if prediction is defined %}<div class="card"><span class="pill">PREDICTION COMPLETE</span><h2>Estimated {{prediction_target}}</h2><div class="result">{{"%.2f"|format(prediction)}}</div><p class="muted">This is a model estimate, not a guarantee of the actual outcome.</p></div>{% endif %}
+<div class="layout"><section>
+<div class="card"><span class="pill">STEP 01 · DATA</span><h2>Upload your dataset</h2><p class="sub">Choose a CSV, such as 50_Startups.csv. The target column should contain numeric values.</p>
+<form action="/upload" method="post" enctype="multipart/form-data"><label>CSV file</label><input type="file" name="dataset" accept=".csv" required><button class="btn">Upload dataset ↗</button></form></div>
+{% if uploaded and columns %}<div class="card"><span class="pill">STEP 02 · TRAIN</span><h2>Configure your model</h2><p class="sub">Choose the column to predict (y), then select one or more independent features (X).</p>
+<form action="/train" method="post"><label>Target column (y)</label><select name="target" required>{% for col in columns %}<option value="{{col}}" {% if col|lower == 'profit' %}selected{% endif %}>{{col}}</option>{% endfor %}</select>
+<label>Independent features (X)</label><div class="checks">{% for col in columns %}<label class="check"><input type="checkbox" name="features" value="{{col}}" {% if col|lower != 'profit' %}checked{% endif %}>{{col}}</label>{% endfor %}</div>
+<p class="muted">Text features are converted into numerical columns automatically. The target is excluded from X.</p><button class="btn">Train regression model ↗</button></form></div>{% endif %}
+{% if trained and feature_types %}<div class="card"><span class="pill">STEP 03 · PREDICT</span><h2>Try a prediction</h2><p class="sub">Enter values for each selected feature.</p><form action="/predict" method="post">
+{% for col,kind in feature_types.items() %}<label>{{col}}</label>{% if kind == 'numeric' %}<input type="number" step="any" name="{{col}}" required placeholder="Enter {{col}}">{% else %}<input type="text" name="{{col}}" required placeholder="Enter {{col}}">{% endif %}{% endfor %}
+<button class="btn">Predict value ✦</button></form></div>{% endif %}
+</section><section>
+{% if trained and metrics %}<div class="card"><span class="pill">MODEL REPORT</span><h2>Performance snapshot</h2><p class="sub">Trained on {{metrics.train}} rows and evaluated on {{metrics.test}} held-out rows.</p>
+<div class="metrics"><div class="metric"><span>R² score</span><strong>{{"%.3f"|format(metrics.r2)}}</strong></div><div class="metric"><span>MSE</span><strong>{{"%.2f"|format(metrics.mse)}}</strong></div><div class="metric"><span>RMSE</span><strong>{{"%.2f"|format(metrics.rmse)}}</strong></div></div>
+<p class="muted">R² is not classification accuracy. MSE and RMSE measure prediction error; lower is generally better.</p><h2>Actual vs predicted</h2><div class="table-wrap">{{comparison|safe}}</div></div>
+{% else %}<div class="card"><span class="pill">YOUR WORKSPACE</span><h2>Everything in one place</h2><p class="sub">Upload a CSV, select features and target, train the model, review evaluation metrics, and test a new prediction.</p><div class="metrics"><div class="metric"><span>Algorithm</span><strong>Linear</strong></div><div class="metric"><span>Inputs</span><strong>Multiple X</strong></div><div class="metric"><span>Output</span><strong>Numeric y</strong></div></div><p class="muted">The app uses an 80/20 train-test split with random_state=2 for reproducible results.</p></div>{% endif %}
+{% if uploaded and preview %}<div class="card"><span class="pill">DATA PREVIEW</span><h2>{{rows}} rows loaded</h2><p class="sub">First 8 rows of your CSV.</p><div class="table-wrap">{{preview|safe}}</div></div>{% endif %}
+</section></div></main><footer>RegressIQ · Built for learning Multiple Linear Regression</footer></body></html>
